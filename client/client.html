@@ -3,9 +3,110 @@
 <head>
   <title>Our simple HTTP server</title>
   <link rel="stylesheet" type="text/css" href="/style.css">
-  
   <script>
+      // Helper method
+      const updateContent = (message) => {
+        const contentSection = document.querySelector("#content");
+        contentSection.innerHTML = `<b>${message}</b>`;
+      };
 
+      const handleResponse = async (response, parseResponse) => {
+        switch(response.status) {
+          case 200: // Success
+            updateContent("Success");
+            break;
+          case 201: //created
+            updateContent("Created");
+            break;
+          case 204: // Updated but no response back from server
+            updateContent('Updated (No content)')
+            break;
+          case 404: // Not Found
+          updateContent("Resource not found")
+            break;
+          case 400: // Bad request
+            updateContent('Bad request')
+            break;
+          default: // any other req
+            updateContent('Error')
+            break;
+        }
+        const content = document.querySelector("#content");
+        if (parseResponse && response.status === 200) {
+          let obj = await response.json();
+          console.log(obj);
+          content.innerHTML += `<p>${JSON.stringify(obj.users)}</p>`;
+        } else {
+          let obj = await response.json();
+          console.log(obj);
+          content.innerHTML += `<p>Message: ${JSON.stringify(obj.message)}</p>`;
+        }
+      };
+
+      // GET and HEAD requests
+      const requestUpdate = async (userForm) => {
+        const url = userForm.querySelector("#urlField").value;
+        const method = userForm.querySelector("#methodSelect").value;
+        
+        // Await fetch, go to url, use right method, attach headers
+        let response = await fetch(url, {
+          method,
+          headers: {
+            Accept: 'application/json'
+          }
+        });
+        
+        handleResponse(response, method === "get");
+      }
+      // Adding data
+      const sendPost = async (nameForm) => {
+
+        console.log("send was called");
+        const url = nameForm.getAttribute("action");
+        const method = nameForm.getAttribute("method");
+
+        const userName = nameForm.querySelector("#nameField").value
+        const userAge = nameForm.querySelector("#ageField").value
+
+        console.log(userName);
+        console.log(userAge);
+
+        const formData = `name=${userName}&age=${userAge}`;
+
+        let response = await fetch (url, {
+          method,
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            Accept: 'application/json'
+          },
+          body: formData,
+        })
+
+        handleResponse(response);
+      }
+
+      const init = () => {
+        // grab form
+        const userForm = document.querySelector("#userForm");
+        const nameForm = document.querySelector("#nameForm");
+
+        const getUsers = (e) => {
+          e.preventDefault();
+          requestUpdate(userForm);
+          return false;
+        }
+      
+        const addUser = (e) => {
+          e.preventDefault();
+          console.log("adduser was clicked");
+          sendPost(nameForm);
+          return false;
+        }
+        // Button
+        nameForm.addEventListener('submit', addUser);
+        userForm.addEventListener('submit', getUsers);
+      }
+    window.onload = init;
   </script>
 </head>
 <body>
@@ -26,7 +127,7 @@
       <select id="methodSelect">
         <option value="get">GET</option>
         <option value="head">HEAD</option>
-      </select>
+      </select> 
       <input type="submit" value="Get User" />
     </form>
   </section>
